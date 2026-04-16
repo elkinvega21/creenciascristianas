@@ -8,10 +8,13 @@ const openai = apiKey ? new OpenAI({
 }) : null;
 
 export const generateQuiz = async (topic, content) => {
-  if (!openai) throw new Error("API Key no configurada. Por favor, añade VITE_OPENAI_API_KEY en los ajustes de Vercel.");
+  if (!openai) throw new Error("API Key no configurada.");
 
-  const prompt = `Genera un cuestionario didáctico de 5 preguntas de opción múltiple sobre el tema: ${topic}. 
+  const prompt = `Genera un cuestionario didáctico y profundo de 5 preguntas de opción múltiple sobre el tema: ${topic}. 
   Contenido de referencia: ${content}
+  
+  Para cada pregunta, proporciona una explicación teológica de por qué la respuesta es correcta.
+  
   Devuelve el resultado en formato JSON con la siguiente estructura:
   {
     "questions": [
@@ -19,13 +22,14 @@ export const generateQuiz = async (topic, content) => {
         "id": 1,
         "question": "¿...?",
         "options": ["A", "B", "C", "D"],
-        "answer": "A"
+        "answer": "A",
+        "explanation": "Explicación teológica profunda basada en la Biblia..."
       }
     ]
   }`;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o', // Upgrading to 4o for better theological depth
     messages: [{ role: 'user', content: prompt }],
     response_format: { type: "json_object" }
   });

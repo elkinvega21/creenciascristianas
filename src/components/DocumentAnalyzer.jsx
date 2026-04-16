@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { analyzeDocument } from '../services/openai';
-import { Upload, FileText, Send, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Upload, FileText, Send, Loader2, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DocumentAnalyzer = () => {
     const [text, setText] = useState('');
@@ -22,17 +22,19 @@ const DocumentAnalyzer = () => {
     };
 
     return (
-        <div className="glass card">
-            <h2 className="gradient-text">Analizador de Documentos AI</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Pega el texto de tus notas o documentos de estudio para recibir un análisis profundo y preguntas de reflexión.
-            </p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="animate-fade-in">
+            <div className="glass card" style={{ marginBottom: '2rem' }}>
+                <h2 className="gradient-text">Analizador de Documentos</h2>
+                <p style={{ color: 'var(--text-muted)' }}>
+                    Pega el texto de tus notas o documentos de estudio para recibir un análisis profundo y preguntas de reflexión.
+                </p>
+            </div>
 
-            <div className="grid">
-                <div>
+            <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <section>
                     <textarea
-                        className="input-field"
-                        style={{ height: '300px', resize: 'none', padding: '1rem' }}
+                        className="input-field glass"
+                        style={{ height: '400px', resize: 'none', padding: '1.5rem', marginBottom: '1.5rem', border: 'none' }}
                         placeholder="Pega aquí el contenido de tu documento..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
@@ -40,41 +42,53 @@ const DocumentAnalyzer = () => {
                     <button
                         onClick={handleAnalyze}
                         className="btn-primary"
-                        style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
+                        style={{ width: '100%', justifyContent: 'center' }}
                         disabled={loading || !text}
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : <Send size={20} />} Analizar con IA
+                        {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
+                        {loading ? 'Generando Análisis...' : 'Analizar con IA'}
                     </button>
-                </div>
+                </section>
 
-                <div className="glass" style={{ padding: '1.5rem', minHeight: '350px', background: 'rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--primary)' }}>
+                <section className="glass" style={{ padding: '2rem', minHeight: '400px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', borderRadius: '1.25rem', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--primary)' }}>
                         <FileText size={20} />
-                        <h4 style={{ margin: 0 }}>Resultado del Análisis</h4>
+                        <h4 style={{ margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resultado del Análisis</h4>
                     </div>
 
-                    {loading ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                            <Loader2 className="animate-spin" size={32} />
-                            <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Procesando docuemento...</p>
-                        </div>
-                    ) : analysis ? (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            style={{ whiteSpace: 'pre-line', fontSize: '0.95rem' }}
-                        >
-                            {analysis}
-                        </motion.div>
-                    ) : (
-                        <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '4rem' }}>
-                            <Upload size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                            <p>Todavía no hay análisis. Sube tu texto para comenzar.</p>
-                        </div>
-                    )}
-                </div>
+                    <AnimatePresence mode="wait">
+                        {loading ? (
+                            <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px' }}
+                            >
+                                <Loader2 className="animate-spin text-primary" size={40} />
+                                <p style={{ marginTop: '1.5rem', color: 'var(--text-muted)' }}>La IA está procesando el contenido bíblico...</p>
+                            </motion.div>
+                        ) : analysis ? (
+                            <motion.div
+                                key="result"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                style={{ whiteSpace: 'pre-wrap', fontSize: '1.05rem', lineHeight: '1.8' }}
+                            >
+                                {analysis}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="empty"
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '6rem' }}
+                            >
+                                <Upload size={48} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
+                                <p style={{ fontSize: '1.1rem' }}>Sube tu texto para comenzar el análisis.</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </section>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
