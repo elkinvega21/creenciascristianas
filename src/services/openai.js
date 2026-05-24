@@ -51,4 +51,61 @@ export const analyzeDocument = async (text) => {
   return response.choices[0].message.content;
 };
 
+export const generateStudyRoutine = async (content) => {
+  if (!openai) throw new Error("API Key no configurada.");
+
+  const prompt = `Crea una rutina de estudio bíblico paso a paso basada en el siguiente contenido:
+  Contenido: ${content}
+  
+  Devuelve el resultado en formato JSON con la siguiente estructura:
+  {
+    "routineName": "Título de la Rutina",
+    "steps": [
+      {
+        "step": 1,
+        "title": "Nombre del paso",
+        "description": "Qué hacer en este paso",
+        "durationMinutes": 15
+      }
+    ],
+    "summary": "Resumen general del propósito de esta rutina."
+  }`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+    response_format: { type: "json_object" }
+  });
+
+  return JSON.parse(response.choices[0].message.content);
+};
+
+export const generateExamFromDocument = async (content, questionCount = 5) => {
+  if (!openai) throw new Error("API Key no configurada.");
+
+  const prompt = `Genera un cuestionario profundo de ${questionCount} preguntas de opción múltiple estrictamente basado en el siguiente documento.
+  Documento: ${content}
+  
+  Devuelve el resultado en formato JSON con la siguiente estructura:
+  {
+    "questions": [
+      {
+        "id": 1,
+        "question": "¿...?",
+        "options": ["A", "B", "C", "D"],
+        "answer": "A",
+        "explanation": "Explicación basada en el documento..."
+      }
+    ]
+  }`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: prompt }],
+    response_format: { type: "json_object" }
+  });
+
+  return JSON.parse(response.choices[0].message.content);
+};
+
 export default openai;

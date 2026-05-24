@@ -11,11 +11,15 @@
     "start": "vite preview --port $PORT --host"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",
     "openai": "^6.33.0",
+    "pdfjs-dist": "^5.7.284",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "youtube-transcript": "^1.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
