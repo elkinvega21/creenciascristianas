@@ -30,10 +30,20 @@ const AIChatQuiz = () => {
     };
 
     const handleAnswer = (option) => {
+        if (!quiz || !quiz[currentQuestion]) return;
         setSelectedAnswer(option);
         setShowExplanation(true);
-        if (option === quiz[currentQuestion].answer) {
-            setScore(score + 1);
+        const clean = (str) => str.replace(/^[A-D][\).\s]*/i, "").trim().toUpperCase();
+        const getLetter = (str) => str.trim().charAt(0).toUpperCase();
+        const answerRaw = quiz[currentQuestion].answer;
+        const answerClean = clean(answerRaw);
+        const selectedClean = clean(option);
+        // If answer is a single letter (e.g., "B"), compare based on the option's leading letter
+        const isLetterAnswer = answerClean.length === 1 && /^[A-D]$/.test(answerClean);
+        const isCorrect = isLetterAnswer ? getLetter(option) === answerClean : selectedClean === answerClean;
+        console.log('Answer validation:', { answerRaw, answerClean, selectedClean, isLetterAnswer, isCorrect });
+        if (isCorrect) {
+            setScore(prev => prev + 1);
         }
     };
 
@@ -98,27 +108,29 @@ const AIChatQuiz = () => {
                         <h3 style={{ fontSize: '1.5rem', lineHeight: '1.4', marginBottom: '2rem' }}>{quiz[currentQuestion].question}</h3>
 
                         <div style={{ display: 'grid', gap: '0.75rem' }}>
-                            {quiz[currentQuestion].options.map((opt, i) => {
-                                const isCorrect = opt === quiz[currentQuestion].answer;
-                                const isSelected = selectedAnswer === opt;
-
-                                return (
-                                    <button
-                                        key={i}
-                                        onClick={() => handleAnswer(opt)}
-                                        disabled={selectedAnswer !== null}
-                                        className={`option-btn ${isSelected ? 'selected' : ''}`}
-                                        style={{
-                                            borderLeft: isSelected ? `4px solid ${isCorrect ? 'var(--accent)' : '#ef4444'}` : '1px solid var(--glass-border)'
-                                        }}
-                                    >
-                                        <span>{opt}</span>
-                                        {isSelected && (
-                                            isCorrect ? <CheckCircle2 size={20} color="var(--accent)" /> : <XCircle size={20} color="#ef4444" />
-                                        )}
-                                    </button>
-                                );
-                            })}
+                                {quiz[currentQuestion].options.map((opt, i) => {
+                                    const clean = (str) => str.replace(/^[A-D][\).\s]*/i, "").trim().toUpperCase();
+                                    const getLetter = (str) => str.trim().charAt(0).toUpperCase();
+                                    const answerRaw = quiz[currentQuestion].answer;
+                                    const answerClean = clean(answerRaw);
+                                    const isLetterAnswer = answerClean.length === 1 && /^[A-D]$/.test(answerClean);
+                                    const isCorrect = isLetterAnswer ? getLetter(opt) === answerClean : clean(opt) === answerClean;
+                                    const isSelected = selectedAnswer && (isLetterAnswer ? getLetter(selectedAnswer) === getLetter(opt) : clean(selectedAnswer) === clean(opt));
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleAnswer(opt)}
+                                            disabled={selectedAnswer !== null}
+                                            className={`option-btn ${isSelected ? 'selected' : ''}`}
+                                            style={{
+                                                borderLeft: isSelected ? `4px solid ${isCorrect ? 'var(--accent)' : '#ef4444'}` : '1px solid var(--glass-border)'
+                                            }}
+                                        >
+                                            <span>{opt}</span>
+                                            {isSelected && (isCorrect ? <CheckCircle2 size={20} color="var(--accent)" /> : <XCircle size={20} color="#ef4444" />)}
+                                        </button>
+                                    );
+                                })}
                         </div>
 
                         <AnimatePresence>
