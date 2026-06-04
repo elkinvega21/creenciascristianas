@@ -92,11 +92,14 @@ export const generateExamFromDocument = async (content, questionCount = 5) => {
       {
         "id": 1,
         "question": "¿...?",
-        "options": ["A", "B", "C", "D"],
-        "answer": "A",
+        "options": ["Texto de la opción 1", "Texto de la opción 2", "Texto de la opción 3", "Texto de la opción 4"],
         "explanation": "Explicación basada en el documento..."
       }
-    ]
+    ],
+    "answers": {
+      "1": "Texto de la opción correcta (Debe ser EXACTAMENTE igual al string de la opción)",
+      "2": "Texto de la opción correcta"
+    }
   }`;
 
   const response = await openai.chat.completions.create({

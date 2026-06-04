@@ -20,7 +20,8 @@ const MultiplayerExam = () => {
   // Host state
   const [hostText, setHostText] = useState('');
   const [hostFile, setHostFile] = useState(null);
-  const [durationMinutes, setDurationMinutes] = useState(5);
+  const [durationMinutes, setDurationMinutes] = useState(20);
+  const [questionCount, setQuestionCount] = useState(5);
   
   // Host Kahoot states
   const [hostPhase, setHostPhase] = useState('waiting'); // waiting, question, leaderboard, finished
@@ -339,18 +340,18 @@ const MultiplayerExam = () => {
     setLoading(true);
     try {
       const parsedText = await parseInput(hostText, hostFile);
-      const result = await generateExamFromDocument(parsedText, 5);
+      const result = await generateExamFromDocument(parsedText, questionCount);
       const newCode = generateCode();
       
       const { data, error } = await supabase.from('exam_rooms').insert([
-        { room_code: newCode, exam_data: result.questions, duration_minutes: durationMinutes }
+        { room_code: newCode, exam_data: result, duration_minutes: durationMinutes }
       ]).select().single();
 
       if (error) throw error;
 
       setRoomId(data.id);
       setRoomCode(newCode);
-      setExamData(result.questions);
+      setExamData(result);
       setMode('host');
       setHostPhase('waiting');
       setPlayers([]);
@@ -359,7 +360,7 @@ const MultiplayerExam = () => {
         roomId: data.id,
         roomCode: newCode,
         mode: 'host',
-        examData: result.questions,
+        examData: result,
         roomStatus: 'waiting'
       });
 
@@ -413,7 +414,7 @@ const MultiplayerExam = () => {
 
   const handleNextQuestion = () => {
     const nextIndex = currentQuestion + 1;
-    if (nextIndex < examData.length) {
+    if (nextIndex < examData.questions.length) {
       setCurrentQuestion(nextIndex);
       setHostPhase('question');
       setAnsweredPlayers([]);
@@ -512,8 +513,8 @@ const MultiplayerExam = () => {
     if (playerPhase !== 'question') return;
 
     setSelectedOption(option);
-    const questionObj = examData[currentQuestion];
-    const isCorrect = option === questionObj.answer;
+    const questionObj = examData.questions[currentQuestion];
+    const isCorrect = option === examData.answers[questionObj.id];
     setIsAnswerCorrect(isCorrect);
 
     // Calcular velocidad y puntos estilo Kahoot (Base 1000 + hasta 500 de velocidad)
@@ -541,7 +542,7 @@ const MultiplayerExam = () => {
 
     // 1. Guardar en base de datos incrementalmente
     try {
-      const isLastQuestion = currentQuestion + 1 === examData.length;
+      const isLastQuestion = currentQuestion + 1 === examData.questions.length;
       await supabase.from('exam_players').update({
         score: newScore,
         correct_answers: newCorrectAnswers,
@@ -691,19 +692,32 @@ const MultiplayerExam = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Segundos por Pregunta</label>
                   <select 
                     className="input-field glass" 
                     value={durationMinutes} 
                     onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
-                    style={{ padding: '0.5rem 1rem', fontSize: '0.95rem', border: '1px solid var(--border-color)' }}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.95rem', border: '1px solid var(--border-color)', width: '100%' }}
                   >
                     <option value={10}>10 segundos (Rápido)</option>
                     <option value={20}>20 segundos (Estándar)</option>
                     <option value={30}>30 segundos (Medio)</option>
                     <option value={60}>60 segundos (Relajado)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Cantidad de Preguntas</label>
+                  <select 
+                    className="input-field glass" 
+                    value={questionCount} 
+                    onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.95rem', border: '1px solid var(--border-color)', width: '100%' }}
+                  >
+                    <option value={3}>3 preguntas</option>
+                    <option value={5}>5 preguntas</option>
+                    <option value={10}>10 preguntas</option>
                   </select>
                 </div>
               </div>
@@ -791,7 +805,7 @@ const MultiplayerExam = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
                 <div>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>PREGUNTA MULTIJUGADOR</span>
-                  <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Pregunta {currentQuestion + 1} de {examData.length}</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Pregunta {currentQuestion + 1} de {examData.questions.length}</h3>
                 </div>
                 
                 {/* Visualizador del Timer */}
@@ -810,12 +824,12 @@ const MultiplayerExam = () => {
 
               {/* Texto de la pregunta */}
               <h2 style={{ fontSize: '2.25rem', textAlign: 'center', lineHeight: 1.3, marginBottom: '3rem', fontWeight: 700 }}>
-                {examData[currentQuestion].question}
+                {examData.questions[currentQuestion].question}
               </h2>
 
               {/* Opciones (Bloqueadas para el Host) */}
               <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '3rem' }}>
-                {examData[currentQuestion].options.map((opt, i) => (
+                {examData.questions[currentQuestion].options.map((opt, i) => (
                   <div 
                     key={i} 
                     className="glass" 
@@ -892,13 +906,13 @@ const MultiplayerExam = () => {
               </span>
 
               <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '2rem' }}>
-                {examData[currentQuestion].question}
+                {examData.questions[currentQuestion].question}
               </h2>
 
               {/* Opciones con Resultados del Gráfico */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-                {examData[currentQuestion].options.map((opt, i) => {
-                  const isCorrectOpt = opt === examData[currentQuestion].answer;
+                {examData.questions[currentQuestion].options.map((opt, i) => {
+                  const isCorrectOpt = opt === examData.answers[examData.questions[currentQuestion].id];
                   // Contar cuántos jugadores eligieron esta opción
                   const voteCount = answeredPlayers.filter(a => a.selectedOption === opt).length;
                   const votePercent = answeredPlayers.length > 0 ? (voteCount / answeredPlayers.length) * 100 : 0;
@@ -998,18 +1012,27 @@ const MultiplayerExam = () => {
                 </div>
               </div>
 
-              {/* Botón de Siguiente Pregunta */}
-              <button 
-                onClick={handleNextQuestion} 
-                className="btn-primary" 
-                style={{ width: '100%', justifyContent: 'center', padding: '1.25rem', borderRadius: '16px', fontSize: '1.1rem', fontWeight: 600 }}
-              >
-                {currentQuestion + 1 < examData.length ? (
-                  <>Siguiente Pregunta <ArrowRight size={20} /></>
-                ) : (
-                  <>Ver Resultados Finales 🏆</>
-                )}
-              </button>
+              {/* Botón de Siguiente Pregunta y Terminar Examen */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button 
+                  onClick={handleNextQuestion} 
+                  className="btn-primary" 
+                  style={{ flex: 1, justifyContent: 'center', padding: '1.25rem', borderRadius: '16px', fontSize: '1.1rem', fontWeight: 600 }}
+                >
+                  {currentQuestion + 1 < examData.questions.length ? (
+                    <>Siguiente Pregunta <ArrowRight size={20} /></>
+                  ) : (
+                    <>Ver Resultados Finales 🏆</>
+                  )}
+                </button>
+                <button 
+                  onClick={handleEndExamHost} 
+                  className="btn-primary" 
+                  style={{ background: 'var(--danger)', justifyContent: 'center', padding: '1.25rem', borderRadius: '16px', fontSize: '1.1rem', fontWeight: 600 }}
+                >
+                  Terminar Examen
+                </button>
+              </div>
             </div>
           )}
 
@@ -1142,7 +1165,7 @@ const MultiplayerExam = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
                 <div>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>CUESTIONARIO EN VIVO</span>
-                  <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Pregunta {currentQuestion + 1} de {examData.length}</h4>
+                  <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Pregunta {currentQuestion + 1} de {examData.questions.length}</h4>
                 </div>
                 
                 {/* Timer para Jugador */}
@@ -1155,11 +1178,11 @@ const MultiplayerExam = () => {
               </div>
 
               <h3 style={{ fontSize: '1.65rem', fontWeight: 700, lineHeight: 1.35, marginBottom: '2.5rem', color: 'var(--text-main)' }}>
-                {examData[currentQuestion].question}
+                {examData.questions[currentQuestion].question}
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {examData[currentQuestion].options.map((opt, i) => (
+                {examData.questions[currentQuestion].options.map((opt, i) => (
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -1215,7 +1238,7 @@ const MultiplayerExam = () => {
                     La respuesta correcta era:
                   </p>
                   <p style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, background: 'white', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'inline-block', marginTop: '0.5rem' }}>
-                    {examData[currentQuestion].answer}
+                    {examData.answers[examData.questions[currentQuestion].id]}
                   </p>
                 </div>
               )}
@@ -1296,7 +1319,7 @@ const MultiplayerExam = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Respuestas Correctas</span>
-                  <span style={{ fontWeight: '800', color: 'var(--accent)', fontSize: '1.2rem' }}>{correctAnswers} / {examData ? examData.length : 0}</span>
+                  <span style={{ fontWeight: '800', color: 'var(--accent)', fontSize: '1.2rem' }}>{correctAnswers} / {examData?.questions ? examData.questions.length : 0}</span>
                 </div>
               </div>
 

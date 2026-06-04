@@ -14,14 +14,15 @@ const DocumentExamModule = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [file, setFile] = useState(null);
+  const [questionCount, setQuestionCount] = useState(5);
 
   const handleStartExam = async () => {
     if (!text.trim() && !file) return;
     setLoadingExam(true);
     try {
       const parsedText = await parseInput(text, file);
-      const result = await generateExamFromDocument(parsedText, 5);
-      setExam(result.questions);
+      const result = await generateExamFromDocument(parsedText, questionCount);
+      setExam(result);
       setCurrentQuestion(0);
       setScore(0);
       setShowResults(false);
@@ -40,13 +41,14 @@ const DocumentExamModule = () => {
     setSelectedOption(option);
     setShowExplanation(true);
     
-    if (option === exam[currentQuestion].answer) {
+    const currentQ = exam.questions[currentQuestion];
+    if (option === exam.answers[currentQ.id]) {
       setScore(score + 1);
     }
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion + 1 < exam.length) {
+    if (currentQuestion + 1 < exam.questions.length) {
       setCurrentQuestion(currentQuestion + 1);
       setShowExplanation(false);
       setSelectedOption(null);
@@ -88,6 +90,20 @@ const DocumentExamModule = () => {
               </div>
             </div>
           </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Cantidad de preguntas</label>
+            <select 
+              className="input-field glass" 
+              value={questionCount} 
+              onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.95rem', border: '1px solid var(--border-color)', width: '100%' }}
+            >
+              <option value={3}>3 preguntas (Corto)</option>
+              <option value={5}>5 preguntas (Estándar)</option>
+              <option value={10}>10 preguntas (Completo)</option>
+              <option value={15}>15 preguntas (Extenso)</option>
+            </select>
+          </div>
           <button
             onClick={handleStartExam}
             className="btn-primary"
@@ -109,19 +125,20 @@ const DocumentExamModule = () => {
       {exam && !showResults && (
          <div className="glass card" style={{ maxWidth: '800px', margin: '0 auto' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', color: 'var(--text-muted)' }}>
-             <span>Pregunta {currentQuestion + 1} de {exam.length}</span>
+             <span>Pregunta {currentQuestion + 1} de {exam.questions.length}</span>
              <span>Puntaje: {score}</span>
            </div>
            
            <h3 style={{ marginBottom: '2rem', fontSize: '1.5rem', lineHeight: '1.4' }}>
-             {exam[currentQuestion].question}
+             {exam.questions[currentQuestion].question}
            </h3>
 
            <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '2rem' }}>
-             {exam[currentQuestion].options.map((opt, i) => {
+             {exam.questions[currentQuestion].options.map((opt, i) => {
                let bgColor = 'rgba(255,255,255,0.05)';
                if (showExplanation) {
-                 if (opt === exam[currentQuestion].answer) bgColor = 'rgba(34, 197, 94, 0.2)'; // Green
+                 const correctAnswer = exam.answers[exam.questions[currentQuestion].id];
+                 if (opt === correctAnswer) bgColor = 'rgba(34, 197, 94, 0.2)'; // Green
                  else if (opt === selectedOption) bgColor = 'rgba(239, 68, 68, 0.2)'; // Red
                }
 
@@ -143,10 +160,10 @@ const DocumentExamModule = () => {
                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                  <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '1rem', marginBottom: '1.5rem' }}>
                    <h4 style={{ color: 'var(--primary)', marginBottom: '0.5rem' }}>Explicación:</h4>
-                   <p style={{ color: 'var(--text-muted)', margin: 0 }}>{exam[currentQuestion].explanation}</p>
+                   <p style={{ color: 'var(--text-muted)', margin: 0 }}>{exam.questions[currentQuestion].explanation}</p>
                  </div>
                  <button onClick={handleNextQuestion} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                   {currentQuestion + 1 < exam.length ? 'Siguiente Pregunta' : 'Ver Resultados'}
+                   {currentQuestion + 1 < exam.questions.length ? 'Siguiente Pregunta' : 'Ver Resultados'}
                  </button>
                </motion.div>
              )}
@@ -158,7 +175,7 @@ const DocumentExamModule = () => {
         <div className="glass card" style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
           <CheckCircle size={80} style={{ color: 'var(--primary)', margin: '0 auto 1.5rem' }} />
           <h2 className="gradient-text">¡Examen Completado!</h2>
-          <p style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Acertaste {score} de {exam.length} preguntas basándote en el documento.</p>
+          <p style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Acertaste {score} de {exam.questions.length} preguntas basándote en el documento.</p>
           <button onClick={() => { setExam(null); setText(''); }} className="btn-primary" style={{ margin: '0 auto' }}>
             Analizar Otro Documento
           </button>
