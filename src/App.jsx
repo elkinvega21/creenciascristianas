@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Book, GraduationCap, FileText, Zap, MessageSquare, ExternalLink, Library, Target, Users } from 'lucide-react';
+import { Book, GraduationCap, FileText, Zap, MessageSquare, ExternalLink, Library, Target, Users, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StudyRoutineModule from './components/StudyRoutineModule';
 import DocumentExamModule from './components/DocumentExamModule';
 import MultiplayerExam from './components/MultiplayerExam';
+import InversoLessonModule from './components/InversoLessonModule';
+import DailyDevotionalModule from './components/DailyDevotionalModule';
 
 function App() {
   const [activeTab, setActiveTab] = useState('study_routine');
@@ -11,7 +13,9 @@ function App() {
   const tabs = [
     { id: 'study_routine', label: 'Rutina IA', icon: <Book size={18} /> },
     { id: 'document_exam', label: 'Examen Doc', icon: <FileText size={18} /> },
-    { id: 'multiplayer', label: 'Sala en Vivo', icon: <Users size={18} /> }
+    { id: 'multiplayer', label: 'Sala en Vivo', icon: <Users size={18} /> },
+    { id: 'inverso_lesson', label: 'Inverso', icon: <Library size={18} /> },
+    { id: 'daily_devotional', label: 'Devocional', icon: <Sun size={18} /> }
   ];
 
   return (
@@ -71,6 +75,16 @@ function App() {
           {activeTab === 'multiplayer' && (
             <motion.div key="multiplayer" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <MultiplayerExam />
+            </motion.div>
+          )}
+          {activeTab === 'inverso_lesson' && (
+            <motion.div key="inverso_lesson" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <InversoLessonModule />
+            </motion.div>
+          )}
+          {activeTab === 'daily_devotional' && (
+            <motion.div key="daily_devotional" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              <DailyDevotionalModule />
             </motion.div>
           )}
         </AnimatePresence>
